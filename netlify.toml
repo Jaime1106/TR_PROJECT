@@ -1,0 +1,21 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/api/calendar/query"
+  to = "/.netlify/functions/calendar-query"
+  status = 200
+
+[[redirects]]
+  from = "/api/calendar/upcoming"
+  to = "/.netlify/functions/calendar-upcoming"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200

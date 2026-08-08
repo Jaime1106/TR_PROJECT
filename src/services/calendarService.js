@@ -1,32 +1,74 @@
-import api from './api';
+const API_BASE = '/api/calendar';
 
 const calendarService = {
-  // Consultar calendario por NIT y tipo de contribuyente
-  queryCalendar: async (nit, contribuyenteType, month = null, year = null) => {
-    try {
-      const params = { nit, contribuyenteType };
-      
-      if (month) params.month = month;
-      if (year) params.year = year;
-      
-      const response = await api.get('/calendar/query', { params });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { error: 'Error al conectar con el servidor' };
+  /**
+   * Consulta las obligaciones tributarias según:
+   * NIT, tipo de contribuyente, mes y año.
+   */
+  async queryCalendar(nit, contribuyenteType, month = null, year = null) {
+    const params = new URLSearchParams();
+
+    if (nit) {
+      params.set('nit', nit);
     }
+
+    if (contribuyenteType) {
+      params.set('contribuyenteType', contribuyenteType);
+    }
+
+    if (month) {
+      params.set('month', month);
+    }
+
+    if (year) {
+      params.set('year', year);
+    }
+
+    const response = await fetch(
+      `${API_BASE}/query?${params.toString()}`
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result?.error || 'Error al consultar el calendario'
+      );
+    }
+
+    return result;
   },
 
-  // Obtener próximos vencimientos
-  getUpcomingDeadlines: async (nit, contribuyenteType, days = 30) => {
-    try {
-      const response = await api.get('/calendar/upcoming', {
-        params: { nit, contribuyenteType, days }
-      });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || { error: 'Error al obtener vencimientos' };
+  /**
+   * Obtiene los próximos vencimientos.
+   */
+  async getUpcoming(nit, contribuyenteType, days = 30) {
+    const params = new URLSearchParams();
+
+    if (nit) {
+      params.set('nit', nit);
     }
-  }
+
+    if (contribuyenteType) {
+      params.set('contribuyenteType', contribuyenteType);
+    }
+
+    params.set('days', days);
+
+    const response = await fetch(
+      `${API_BASE}/upcoming?${params.toString()}`
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result?.error || 'Error al consultar próximos vencimientos'
+      );
+    }
+
+    return result;
+  },
 };
 
 export default calendarService;

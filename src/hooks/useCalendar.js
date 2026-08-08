@@ -6,16 +6,31 @@ export const useCalendar = () => {
   const [error, setError] = useState(null);
   const [data, setData] = useState(null);
 
-  const searchCalendar = async (nit, contribuyenteType, month = null, year = null) => {
+  const searchCalendar = async (
+    nit,
+    contribuyenteType,
+    month = null,
+    year = null
+  ) => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      const result = await calendarService.queryCalendar(nit, contribuyenteType, month, year);
+      const result = await calendarService.queryCalendar(
+        nit,
+        contribuyenteType,
+        month,
+        year
+      );
+
       setData(result.data);
+
       return result.data;
     } catch (err) {
-      setError(err.error || 'Error al realizar la consulta');
+      const errorMessage =
+        err?.message || 'Error al realizar la consulta';
+
+      setError(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -32,6 +47,6 @@ export const useCalendar = () => {
     error,
     data,
     searchCalendar,
-    clearResults
+    clearResults,
   };
 };

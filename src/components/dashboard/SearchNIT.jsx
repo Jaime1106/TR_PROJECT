@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { TIPOS_CONTRIBUYENTE } from '../../utils/constants';
+import { useEffect, useState } from 'react';
+import contribuyenteService from '../../services/contribuyenteService';
 
 const SearchNIT = ({ onSearch, loading }) => {
   const [nit, setNit] = useState('');
@@ -7,6 +7,29 @@ const SearchNIT = ({ onSearch, loading }) => {
   const [mes, setMes] = useState('');
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [error, setError] = useState('');
+
+  // Tipos de contribuyente provenientes de Neon
+  const [tiposContribuyente, setTiposContribuyente] = useState([]);
+  const [loadingTipos, setLoadingTipos] = useState(true);
+
+  useEffect(() => {
+    const cargarTipos = async () => {
+      try {
+        const tipos = await contribuyenteService.getTipos();
+        setTiposContribuyente(tipos);
+      } catch (error) {
+        console.error(
+          'Error cargando tipos de contribuyente:',
+          error
+        );
+        setError('No se pudieron cargar los tipos de contribuyente');
+      } finally {
+        setLoadingTipos(false);
+      }
+    };
+
+    cargarTipos();
+  }, []);
 
   const meses = [
     { value: '', label: 'Todos los meses' },
@@ -25,20 +48,26 @@ const SearchNIT = ({ onSearch, loading }) => {
   ];
 
   const years = [
-    '2024', '2025', '2026', '2027'
+    '2024',
+    '2025',
+    '2026',
+    '2027'
   ];
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (!nit || !tipoContribuyente) {
-      setError('Por favor ingresa el NIT y selecciona el tipo de contribuyente');
+      setError(
+        'Por favor ingresa el NIT y selecciona el tipo de contribuyente'
+      );
       return;
     }
 
     // Validar NIT (9 dígitos)
     const nitLimpio = nit.replace(/[\.\-\s]/g, '');
+
     if (!/^\d{9}$/.test(nitLimpio)) {
       setError('El NIT debe tener exactamente 9 dígitos');
       return;
@@ -54,9 +83,20 @@ const SearchNIT = ({ onSearch, loading }) => {
 
   const formatNit = (value) => {
     const numbers = value.replace(/\D/g, '');
+
     if (numbers.length <= 3) return numbers;
-    if (numbers.length <= 6) return numbers.replace(/(\d{3})(\d{1,3})/, '$1.$2');
-    return numbers.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+
+    if (numbers.length <= 6) {
+      return numbers.replace(
+        /(\d{3})(\d{1,3})/,
+        '$1.$2'
+      );
+    }
+
+    return numbers.replace(
+      /(\d{3})(\d{3})(\d{1,3})/,
+      '$1.$2.$3'
+    );
   };
 
   const handleNitChange = (e) => {
@@ -121,8 +161,10 @@ const SearchNIT = ({ onSearch, loading }) => {
     borderRadius: '5px',
     fontSize: '1rem',
     fontWeight: '500',
-    cursor: loading ? 'wait' : 'pointer',
-    opacity: loading ? 0.7 : 1,
+    cursor:
+      loading || loadingTipos ? 'wait' : 'pointer',
+    opacity:
+      loading || loadingTipos ? 0.7 : 1,
     transition: 'background-color 0.3s',
     height: 'fit-content'
   };
@@ -136,12 +178,17 @@ const SearchNIT = ({ onSearch, loading }) => {
 
   return (
     <div style={containerStyle}>
-      <h3 style={titleStyle}>Consultar Calendario Tributario</h3>
-      
+      <h3 style={titleStyle}>
+        Consultar Calendario Tributario
+      </h3>
+
       <form onSubmit={handleSubmit}>
         <div style={formStyle}>
           <div style={inputGroupStyle}>
-            <label style={labelStyle}>NIT *</label>
+            <label style={labelStyle}>
+              NIT *
+            </label>
+
             <input
               type="text"
               value={nit}
@@ -149,22 +196,39 @@ const SearchNIT = ({ onSearch, loading }) => {
               placeholder="123.456.789"
               style={inputStyle}
               disabled={loading}
-              onFocus={(e) => e.target.style.borderColor = '#1e3a8a'}
-              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+              onFocus={(e) =>
+                (e.target.style.borderColor = '#1e3a8a')
+              }
+              onBlur={(e) =>
+                (e.target.style.borderColor = '#e5e7eb')
+              }
             />
           </div>
 
           <div style={inputGroupStyle}>
-            <label style={labelStyle}>Tipo Contribuyente *</label>
+            <label style={labelStyle}>
+              Tipo Contribuyente *
+            </label>
+
             <select
               value={tipoContribuyente}
-              onChange={(e) => setTipoContribuyente(e.target.value)}
+              onChange={(e) =>
+                setTipoContribuyente(e.target.value)
+              }
               style={selectStyle}
-              disabled={loading}
+              disabled={loading || loadingTipos}
             >
-              <option value="">Seleccione...</option>
-              {TIPOS_CONTRIBUYENTE.map(tipo => (
-                <option key={tipo.id} value={tipo.name}>
+              <option value="">
+                {loadingTipos
+                  ? 'Cargando tipos...'
+                  : 'Seleccione...'}
+              </option>
+
+              {tiposContribuyente.map((tipo) => (
+                <option
+                  key={tipo.id}
+                  value={tipo.name}
+                >
                   {tipo.label}
                 </option>
               ))}
@@ -172,45 +236,79 @@ const SearchNIT = ({ onSearch, loading }) => {
           </div>
 
           <div style={inputGroupStyle}>
-            <label style={labelStyle}>Mes</label>
+            <label style={labelStyle}>
+              Mes
+            </label>
+
             <select
               value={mes}
-              onChange={(e) => setMes(e.target.value)}
+              onChange={(e) =>
+                setMes(e.target.value)
+              }
               style={selectStyle}
               disabled={loading}
             >
-              {meses.map(m => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+              {meses.map((m) => (
+                <option
+                  key={m.value}
+                  value={m.value}
+                >
+                  {m.label}
+                </option>
               ))}
             </select>
           </div>
 
           <div style={inputGroupStyle}>
-            <label style={labelStyle}>Año</label>
+            <label style={labelStyle}>
+              Año
+            </label>
+
             <select
               value={year}
-              onChange={(e) => setYear(e.target.value)}
+              onChange={(e) =>
+                setYear(e.target.value)
+              }
               style={selectStyle}
               disabled={loading}
             >
-              {years.map(y => (
-                <option key={y} value={y}>{y}</option>
+              {years.map((y) => (
+                <option
+                  key={y}
+                  value={y}
+                >
+                  {y}
+                </option>
               ))}
             </select>
           </div>
 
-          <button 
+          <button
             type="submit"
             style={buttonStyle}
-            disabled={loading}
-            onMouseEnter={(e) => !loading && (e.target.style.backgroundColor = '#2563eb')}
-            onMouseLeave={(e) => !loading && (e.target.style.backgroundColor = '#1e3a8a')}
+            disabled={loading || loadingTipos}
+            onMouseEnter={(e) =>
+              !loading &&
+              !loadingTipos &&
+              (e.target.style.backgroundColor = '#2563eb')
+            }
+            onMouseLeave={(e) =>
+              !loading &&
+              !loadingTipos &&
+              (e.target.style.backgroundColor = '#1e3a8a')
+            }
           >
-            {loading ? 'Consultando...' : 'Consultar'}
+            {loading
+              ? 'Consultando...'
+              : 'Consultar'}
           </button>
         </div>
-        
-        {error && <div style={errorStyle}>{error}</div>}
+
+        {error && (
+          <div style={errorStyle}>
+            {error}
+          </div>
+        )}
       </form>
     </div>
   );
